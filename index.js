@@ -1,3 +1,4 @@
+
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
@@ -10,18 +11,18 @@ const fs = require("fs/promises");
 
 
 const app = express();
-const PORT = 3000;
-const HOST = "localhost";
+const PORT = proccess.env.PORT;
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 
-const JWT_SECRET = "gazdivar_nagyon_titkos_kulcs";
-const COOKIE_NAME = "auth_token";
+
 
 const db = mysql.createPool({
-    host: "127.0.0.1",
-    port: 3307,
-    user: "root",
-    password: "",
-    database: "kutyadb",
+    host: process.env.HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
@@ -29,10 +30,7 @@ const db = mysql.createPool({
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({
-    origin: "http://localhost:5173",
-    credentials: true
-}));
+app.use(cors({origin: "*",credentials: true}));
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -72,8 +70,8 @@ function createToken(user) {
 function sendAuthCookie(res, token) {
     res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
-        sameSite: "lax",
-        secure: false,
+        sameSite: "none",
+        secure: true,
         maxAge: 7 * 24 * 60 * 60 * 1000
     });
 }
@@ -224,8 +222,8 @@ app.post("/belepes", async (req, res) => {
 
         res.cookie("auth_token", token, {
             httpOnly: true,
-            sameSite: "lax",
-            secure: false,
+            sameSite: "none",
+            secure: true,
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
@@ -249,7 +247,11 @@ app.post("/belepes", async (req, res) => {
 
 // Kijelentkezés
 app.post("/kijelentkezes", (req, res) => {
-    res.clearCookie("auth_token");
+    res.clearCookie(COOKIE_NAME,{
+        httpOnly: true,
+        sameSite: "none",
+        secure: true,
+    });
     return res.status(200).json({ message: "Sikeres kijelentkezés" });
 });
 
@@ -658,6 +660,6 @@ app.put("/szerepkor/:id", auth, adminOnly, async (req, res) => {
     }
 });
 
-app.listen(PORT, HOST, () => {
-    console.log(`Szerver fut: http://${HOST}:${PORT}`);
+app.listen(PORT, () => {
+    console.log(`Szerver fut: http://:${PORT}`);
 });
